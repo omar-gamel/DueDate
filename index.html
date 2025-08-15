@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprint Due Date Planner - Exas2030</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Sprint Due Date Planner</h1>
+    </header>
+
+    <main class="container">
+      <section class="card" id="sprint-settings">
+        <h2>Sprint Settings</h2>
+        <form id="sprintForm" class="grid-form">
+          <label>
+            <span>Start date</span>
+            <input type="date" id="sprintStart" required />
+          </label>
+          <label>
+            <span>Sprint start time</span>
+            <input type="time" id="sprintStartTime" value="09:00" required />
+          </label>
+          <label>
+            <span>Workday start</span>
+            <input type="time" id="workStartTime" value="09:00" required />
+          </label>
+          <label>
+            <span>Workday end</span>
+            <input type="time" id="workEndTime" value="16:00" required />
+          </label>
+          <label>
+            <span>Length (weeks)</span>
+            <input type="number" id="sprintWeeks" min="1" value="2" required />
+          </label>
+          <label>
+            <span>Extension (days)</span>
+            <input
+              type="number"
+              id="sprintExtensionDays"
+              min="0"
+              value="0"
+              required
+            />
+          </label>
+          <label>
+            <span>Default work hours/day</span>
+            <input
+              type="number"
+              id="defaultDailyHours"
+              min="1"
+              max="24"
+              value="7"
+              required
+            />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Save Sprint</button>
+            <button type="button" id="resetAll" class="btn">Reset All</button>
+          </div>
+        </form>
+
+        <div style="margin-top: 10px">
+          <h3>Official Holidays (Sprint-wide)</h3>
+          <div class="grid-form">
+            <label>
+              <span>Date</span>
+              <input type="date" id="officialHolidayDate" />
+            </label>
+            <label>
+              <span>Name</span>
+              <input
+                type="text"
+                id="officialHolidayName"
+                placeholder="e.g., Eid"
+              />
+            </label>
+            <div class="form-actions">
+              <button class="btn" id="addOfficialHoliday" type="button">
+                Add Holiday
+              </button>
+              <button
+                class="btn danger"
+                id="clearOfficialHolidays"
+                type="button"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+          <div
+            id="officialHolidayList"
+            class="list"
+            style="margin-top: 8px"
+          ></div>
+        </div>
+
+        <div class="note">
+          Notes:
+          <ul>
+            <li>Friday and Saturday are treated as off-days for everyone.</li>
+            <li>
+              Official holidays are off-days for everyone, if added above.
+            </li>
+            <li>
+              Task estimation units: minutes, hours, days, weeks. 1 day =
+              default hours/day, 1 week = 5 working days.
+            </li>
+            <li>
+              Dependencies: Select tasks that must be completed before the
+              current task starts.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card" id="employees">
+        <div class="section-header">
+          <h2>Employees</h2>
+          <button class="btn primary" id="showEmployeeForm">
+            Add New Employee
+          </button>
+        </div>
+        <form
+          id="employeeForm"
+          class="grid-form employee-form"
+          style="display: none"
+        >
+          <label>
+            <span>Name</span>
+            <input
+              type="text"
+              id="employeeName"
+              placeholder="e.g., Ahmed"
+              required
+            />
+          </label>
+          <label>
+            <span>Hours/day</span>
+            <input
+              type="number"
+              id="employeeDailyHours"
+              min="1"
+              max="24"
+              placeholder="Default 7"
+            />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Add Employee</button>
+            <button type="button" class="btn" id="cancelEmployeeForm">
+              Cancel
+            </button>
+          </div>
+        </form>
+        <div id="employeeList" class="employee-list"></div>
+      </section>
+
+      <section class="card" id="stories">
+        <div class="section-header">
+          <h2>User Stories & Tasks</h2>
+          <button class="btn primary" id="showStoryForm">Add New Story</button>
+        </div>
+        <form id="storyForm" class="grid-form story-form" style="display: none">
+          <label>
+            <span>Story title</span>
+            <input
+              type="text"
+              id="storyTitle"
+              placeholder="e.g., As a user I can login"
+              required
+            />
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Add Story</button>
+            <button type="button" class="btn" id="cancelStoryForm">
+              Cancel
+            </button>
+          </div>
+        </form>
+        <div id="storiesList" class="story-list"></div>
+      </section>
+
+      <section class="card" id="results">
+        <div class="section-header">
+          <h2>Schedule & Due Dates</h2>
+          <div>
+            <button id="computeBtn" class="btn primary">
+              Compute Schedule
+            </button>
+            <button id="exportPdfBtn" class="btn">Export PDF</button>
+          </div>
+        </div>
+        <div class="schedule-content">
+          <div class="calendar-container">
+            <h3>Schedule</h3>
+            <div id="schedule" class="calendar-wrap"></div>
+          </div>
+          <div class="due-dates">
+            <div class="section-header">
+              <h3>Due Dates</h3>
+              <button class="btn toggle" id="toggleDueDates">
+                Toggle Details
+              </button>
+            </div>
+            <div id="dueDatesDetails" class="due-dates-details active">
+              <div class="card nested">
+                <h4>Task Due Dates</h4>
+                <div id="taskSummary"></div>
+              </div>
+              <div class="card nested">
+                <h4>Story Due Dates</h4>
+                <div id="storySummary"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>Built by Exas2030</p>
+        <p class="copyright">&copy; 2025 Exas2030. All rights reserved.</p>
+        <p class="about-company">
+          About Exas2030: We are a forward-thinking technology company dedicated
+          to delivering innovative solutions for project management and team
+          collaboration. Our mission is to empower businesses to achieve their
+          goals efficiently through cutting-edge tools and services.
+        </p>
+      </div>
+    </footer>
+
+    <!-- Add Task Modal -->
+    <div id="taskModal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-action="close-modal"></div>
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="taskModalTitle"
+      >
+        <div class="modal-header">
+          <h3 id="taskModalTitle">Add Task</h3>
+          <button class="btn small" id="closeTaskModal" aria-label="Close">
+            ×
+          </button>
+        </div>
+        <form id="taskModalForm" class="grid-form task-form">
+          <input type="hidden" id="taskModalStoryId" />
+          <input type="hidden" id="taskModalTaskId" />
+
+          <!-- Row 1: Task name -->
+          <label class="full">
+            <span>Task title</span>
+            <input type="text" id="taskModalTitleInput" required />
+          </label>
+
+          <!-- Row 2: Estimation and Assign -->
+          <div class="form-row">
+            <label class="half">
+              <span>Estimate</span>
+              <input
+                type="text"
+                id="taskModalEstimateText"
+                placeholder="e.g., 2w 1d 5h 4m or 3h or 90m"
+                required
+              />
+            </label>
+            <label class="half">
+              <span>Assignee</span>
+              <select id="taskModalAssignee"></select>
+            </label>
+          </div>
+
+          <!-- Row 3: Dependencies -->
+          <div class="full">
+            <div class="section-title">Dependencies</div>
+            <div
+              id="taskModalDepList"
+              class="checklist"
+              aria-label="Dependencies list"
+            >
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn primary" id="taskModalSubmitBtn">
+              Add Task
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="pdf-export-container"
+      style="display: none; background: white; width: 100%"
+    >
+      <!-- Content will be moved here temporarily for PDF export -->
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
