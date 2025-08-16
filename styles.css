@@ -1222,4 +1222,39 @@ td {
   break-inside: avoid !important;
 }
 
+/* Drag-and-drop enhancements */
+.story-card {
+  cursor: move; /* Indicates draggable item */
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
 
+.story-card.dragging {
+  opacity: 0.5; /* Visual feedback while dragging */
+  transform: scale(0.98); /* Slight shrink effect */
+  background: #1a2238; /* Consistent hover-like background */
+}
+
+.story-card .tasks {
+  min-height: 50px; /* Ensure drop area is visible */
+}
+
+/* Optional: Highlight drop target */
+.story-card:hover:not(.dragging) {
+  border: 2px dashed var(--primary); /* Visual cue for drop area */
+}
+
+/* Ensure smooth transitions during reordering */
+@keyframes slideReorder {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.story-card {
+  animation: slideReorder 0.3s ease; /* Animate reordering */
+}

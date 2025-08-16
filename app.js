@@ -904,13 +904,13 @@ storyForm.addEventListener("submit", (e) => {
   if (!title) return;
   const story = { id: uid("story"), title, tasks: [] };
   const defaultTaskTitles = [
-    "Frontend Implementation",
-    "Backend Implementation",
-    "Test Cases",
-    "Test Execution",
-    "Frontend Review",
-    "Backend Review",
     "UI/UX Design",
+    "Test Cases",
+    "Backend Implementation",
+    "Backend Review",
+    "Frontend Implementation",
+    "Frontend Review",
+    "Test Execution",
   ];
   story.tasks = defaultTaskTitles.map((tTitle) => ({
     id: uid("task"),
@@ -1818,6 +1818,166 @@ state.employees.forEach((emp) => {
   const leaveInput = document.getElementById(`leaveDate-${emp.id}`);
   if (leaveInput) disableWeekendSelection(leaveInput);
 });
+
+// Drag-and-drop event listeners
+document.addEventListener("dragstart", (e) => {
+  const target = e.target;
+  if (target.classList.contains("story-card")) {
+    target.classList.add("dragging");
+    e.dataTransfer.setData("text/plain", target.getAttribute("data-story-id"));
+  }
+});
+
+document.addEventListener("dragend", (e) => {
+  const target = e.target;
+  if (target.classList.contains("story-card")) {
+    target.classList.remove("dragging");
+  }
+});
+
+document.addEventListener("dragover", (e) => {
+  e.preventDefault(); // Allow drop
+});
+
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const storyId = e.dataTransfer.getData("text/plain");
+  const draggedStory = state.stories.find((s) => s.id === Number(storyId));
+  if (!draggedStory) return;
+
+  const dropTarget = e.target.closest(".story-card");
+  if (!dropTarget) return;
+
+  const targetStoryId = Number(dropTarget.getAttribute("data-story-id"));
+  const targetIndex = state.stories.findIndex((s) => s.id === targetStoryId);
+
+  // Remove dragged story from its current position
+  const currentIndex = state.stories.findIndex((s) => s.id === Number(storyId));
+  const [removedStory] = state.stories.splice(currentIndex, 1);
+
+  // Insert it before or after the drop target based on drop position
+  const rect = dropTarget.getBoundingClientRect();
+  const dropY = e.clientY - rect.top;
+  const newIndex = dropY < rect.height / 2 ? targetIndex : targetIndex + 1;
+
+  state.stories.splice(newIndex, 0, removedStory);
+  save();
+  renderStories();
+});
+
+// Update renderStories to include draggable attributes
+function renderStories() {
+  const storiesList = document.getElementById("storiesList");
+  if (!state.stories.length) {
+    storiesList.innerHTML =
+      '<div class="story-card"><div class="header"><div>No stories yet.</div></div></div>';
+    return;
+  }
+  storiesList.innerHTML = "";
+  state.stories.forEach((story) => {
+    const wrap = document.createElement("div");
+    wrap.className = "story-card";
+    wrap.setAttribute("draggable", "true");
+    wrap.setAttribute("data-story-id", story.id);
+    const taskRows = (story.tasks || [])
+      .map((t) => {
+        const assignee = state.employees.find((e) => e.id === t.assigneeId);
+        const deps = (t.dependencies || [])
+          .map((depId) => {
+            const dep = story.tasks.find((tsk) => tsk.id === depId);
+            return dep ? dep.title : "";
+          })
+          .filter(Boolean);
+
+        let depDisplay;
+        if (deps.length === 0) {
+          depDisplay = '<span class="chip off">None</span>';
+        } else if (deps.length === 1) {
+          depDisplay = `<span class="chip dependency" title="${escapeHtml(
+            deps[0]
+          )}">${escapeHtml(
+            deps[0].length > 20 ? deps[0].substring(0, 20) + "..." : deps[0]
+          )}</span>`;
+        } else {
+          const firstDep =
+            deps[0].length > 15 ? deps[0].substring(0, 15) + "..." : deps[0];
+          depDisplay = `<span class="chip dependency" title="${escapeHtml(
+            deps.join(", ")
+          )}">${escapeHtml(firstDep)} +${deps.length - 1}</span>`;
+        }
+        const assigneeSelect = state.employees.length
+          ? `<select class="inline-select" data-action="change-assignee" data-story-id="${
+              story.id
+            }" data-task-id="${t.id}">
+               <option value=""${
+                 t.assigneeId ? "" : " selected"
+               }>Unassigned</option>
+               ${state.employees
+                 .map(
+                   (e) =>
+                     `<option value="${e.id}"${
+                       t.assigneeId === e.id ? " selected" : ""
+                     }>${escapeHtml(e.name)}</option>`
+                 )
+                 .join("")}
+             </select>`
+          : '<span class="chip off">Unassigned</span>';
+        return `
+        <tr>
+          <td>${escapeHtml(t.title)}</td>
+          <td>${assigneeSelect}</td>
+          <td><input type="text" class="estimate-input" data-action="change-estimate" data-story-id="${
+            story.id
+          }" data-task-id="${t.id}" value="${minutesToJiraSyntax(
+          t.estimateMinutes
+        )}" placeholder="e.g., 2w 1d 5h 4m"></td>
+          <td>${depDisplay}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn small" data-action="edit-task" data-story-id="${
+                story.id
+              }" data-task-id="${t.id}">Edit</button>
+              <button class="btn small danger" data-action="remove-task" data-story-id="${
+                story.id
+              }" data-task-id="${t.id}">Remove</button>
+            </div>
+          </td>
+        </tr>`;
+      })
+      .join("");
+    const tasksTable =
+      story.tasks && story.tasks.length
+        ? `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Assignee</th>
+              <th>Estimate</th>
+              <th>Dependencies</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${taskRows}
+          </tbody>
+        </table>`
+        : '<span class="chip off">No tasks</span>';
+    wrap.innerHTML = `
+      <div class="header" data-story-id="${story.id}">
+        <strong>${story.title}</strong>
+        <div class="actions">
+          <button class="btn small" data-action="open-task-modal" data-id="${story.id}">Add Task</button>
+          <button class="btn small danger" data-action="remove-story" data-id="${story.id}">Remove Story</button>
+        </div>
+      </div>
+      <div class="tasks" id="tasks-${story.id}">
+        ${tasksTable}
+      </div>
+    `;
+    storiesList.appendChild(wrap);
+  });
+}
 
 const exportPdfBtn = document.getElementById("exportPdfBtn");
 exportPdfBtn?.addEventListener("click", async () => {
