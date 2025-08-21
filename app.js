@@ -33,6 +33,240 @@ toggleDueDatesBtn.addEventListener("click", () => {
   details.classList.toggle("active");
 });
 
+// Add event listener for PDF export button
+const printDueDatesBtn = document.getElementById("printDueDates");
+printDueDatesBtn.addEventListener("click", () => {
+  // Create a clean print version
+  const printWindow = window.open("", "_blank");
+
+  // Get the content to print - only due dates, no schedule
+  const dueDatesContent = document.querySelector(".due-dates").cloneNode(true);
+
+  // Remove buttons from the print version
+  const buttons = dueDatesContent.querySelectorAll("button");
+  buttons.forEach((button) => button.remove());
+
+  // Create HTML content for the print window
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Sprint Due Dates</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          margin: 30px;
+          color: #333;
+          background: #fff;
+          line-height: 1.6;
+        }
+        h1 {
+          text-align: center;
+          margin-bottom: 30px;
+          color: #2c5282;
+          font-size: 32pt;
+          font-weight: 700;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+          letter-spacing: 0.5px;
+          border-bottom: 3px solid #3a6ea5;
+          padding-bottom: 15px;
+          max-width: 600px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        h3 {
+          margin-top: 30px;
+          margin-bottom: 10px;
+          border-bottom: 1px solid #000;
+          padding-bottom: 5px;
+        }
+        h4 {
+          margin-top: 20px;
+          margin-bottom: 10px;
+        }
+        table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          margin: 0 0 35px 0;
+          page-break-inside: auto;
+          border: 2px solid #2c3e50;
+          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+          font-size: 11pt;
+          border-radius: 10px;
+          overflow: hidden;
+          background-color: #fff;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+          transition: background-color 0.2s ease;
+        }
+        tr:nth-child(even) {
+          background-color: #f5f9ff;
+          border-top: 1px solid #e1e8f0;
+          border-bottom: 1px solid #e1e8f0;
+        }
+        tr:hover {
+          background-color: #edf5ff;
+        }
+        th, td {
+          padding: 16px 14px;
+          text-align: left;
+          vertical-align: middle;
+          position: relative;
+        }
+        td {
+          line-height: 1.5;
+          color: #333;
+          border-bottom: 1px solid #e1e8f0;
+          font-size: 11.5pt;
+        }
+        td:first-child {
+          font-weight: 600;
+        }
+        th {
+          background: linear-gradient(to bottom, #3a6ea5, #2c5282);
+          color: white;
+          font-weight: bold;
+          font-size: 13pt;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          border-bottom: 3px solid #1c3d5a;
+          text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+          padding: 18px 14px;
+        }
+        .due-date-overdue {
+          color: #cc0000;
+          font-weight: bold;
+          background-color: #ffeeee;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: 1.5px solid #ff9999;
+          box-shadow: 0 3px 6px rgba(204,0,0,0.2);
+          display: inline-block;
+          font-size: 12.5pt;
+          margin: 3px 0;
+          letter-spacing: 0.3px;
+        }
+        .due-date-soon {
+          color: #cc6600;
+          font-weight: bold;
+          background-color: #fff0e0;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: 1.5px solid #ffcc99;
+          box-shadow: 0 3px 6px rgba(204,102,0,0.2);
+          display: inline-block;
+          font-size: 12.5pt;
+          margin: 3px 0;
+          letter-spacing: 0.3px;
+        }
+        .chip {
+          background: #f5f9ff;
+          border: 1.5px solid #3a6ea5;
+          border-radius: 8px;
+          padding: 7px 14px;
+          font-size: 11.5pt;
+          display: inline-block;
+          margin: 6px;
+          box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+          font-weight: 600;
+          transition: all 0.2s ease;
+          color: #2c5282;
+        }
+        .chip.critical {
+          background: #ffeeee;
+          color: #cc0000;
+          border: 1.5px solid #cc0000;
+          font-weight: bold;
+          box-shadow: 0 3px 6px rgba(204,0,0,0.2);
+        }
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 30px;
+          margin-bottom: 40px;
+        }
+        .summary-card {
+          border: 1.5px solid #2c5282;
+          border-radius: 12px;
+          padding: 24px;
+          background: #f5f9ff;
+          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+          transition: transform 0.2s ease;
+        }
+        .summary-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .summary-card.overdue {
+          background: #ffeeee;
+          border-color: #cc0000;
+          border-width: 2px;
+          box-shadow: 0 6px 12px rgba(204,0,0,0.2);
+        }
+        .summary-count {
+          font-size: 42px;
+          font-weight: bold;
+          margin: 20px 0;
+          color: #2c5282;
+          text-align: center;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+        }
+        .summary-card.overdue .summary-count {
+          color: #cc0000;
+        }
+        .due-dates-section {
+          margin-bottom: 50px;
+          padding-bottom: 30px;
+          border-bottom: 3px solid #e1e8f0;
+        }
+        .due-dates-section h3 {
+          font-size: 24pt;
+          color: #2c5282;
+          margin-bottom: 25px;
+          padding-bottom: 12px;
+          border-bottom: 3px solid #3a6ea5;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+          letter-spacing: 0.5px;
+          font-weight: 700;
+        }
+        @media print {
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .calendar-wrap {
+            overflow: visible !important;
+          }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Sprint Due Dates</h1>
+      <div class="due-dates-section">
+        ${dueDatesContent.innerHTML}
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Write to the new window and trigger print
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+
+  // Wait for content to load before printing
+  printWindow.onload = function () {
+    printWindow.print();
+  };
+});
+
 // State
 const state = {
   sprint: {
